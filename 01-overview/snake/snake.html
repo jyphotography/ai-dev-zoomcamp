@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Snake</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        body {
+            background-color: #0f172a;
+            font-family: 'Press Start 2P', cursive;
+            touch-action: manipulation; /* Prevents double-tap zoom */
+        }
+
+        canvas {
+            box-shadow: 0 0 20px rgba(34, 211, 238, 0.2);
+            background-color: #020617;
+            image-rendering: pixelated;
+        }
+
+        /* Custom button press effect */
+        .control-btn:active {
+            transform: scale(0.95);
+            background-color: #334155;
+        }
+
+        /* Glow effects */
+        .text-glow {
+            text-shadow: 0 0 10px rgba(34, 211, 238, 0.7);
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col items-center justify-center text-slate-200 overflow-hidden">
+
+    <!-- Header & Score -->
+    <div class="w-full max-w-md px-4 mb-4 flex justify-between items-end">
+        <div>
+            <h1 class="text-cyan-400 text-xl mb-2 text-glow">SNAKE</h1>
+            <div class="text-xs text-slate-400">HIGH SCORE: <span id="highScore" class="text-cyan-200">0</span></div>
+        </div>
+        <div class="text-right">
+            <div class="text-2xl text-cyan-400 text-glow" id="score">0</div>
+            <div class="text-xs text-slate-400">SCORE</div>
+        </div>
+    </div>
+
+    <!-- Game Container -->
+    <div class="relative group">
+        <canvas id="gameCanvas" width="400" height="400" class="border-4 border-slate-700 rounded-lg max-w-[95vw] max-h-[50vh]"></canvas>
+        
+        <!-- Start/Game Over Overlay -->
+        <div id="gameOverlay" class="absolute inset-0 bg-black/80 flex flex-col items-center justify-center rounded-lg z-10">
+            <h2 id="overlayTitle" class="text-2xl text-cyan-400 mb-4 text-glow text-center">READY?</h2>
+            <button id="startBtn" class="px-6 py-3 bg-cyan-600 hover:bg-cyan-500 text-white text-sm rounded border-b-4 border-cyan-800 active:border-b-0 active:mt-1 transition-all">
+                START GAME
+            </button>
+            <p class="mt-4 text-[10px] text-slate-400 text-center px-4">
+                Use Arrow Keys or Buttons to move
+            </p>
+        </div>
+    </div>
+
+    <!-- Mobile Controls -->
+    <div class="mt-6 grid grid-cols-3 gap-2 w-48 select-none">
+        <div></div>
+        <button class="control-btn bg-slate-700 p-4 rounded-lg border-b-4 border-slate-900 flex items-center justify-center" onclick="handleInput('ArrowUp')">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
+        </button>
+        <div></div>
+        
+        <button class="control-btn bg-slate-700 p-4 rounded-lg border-b-4 border-slate-900 flex items-center justify-center" onclick="handleInput('ArrowLeft')">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+        </button>
+        <button class="control-btn bg-slate-700 p-4 rounded-lg border-b-4 border-slate-900 flex items-center justify-center" onclick="handleInput('ArrowDown')">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
+        </button>
+        <button class="control-btn bg-slate-700 p-4 rounded-lg border-b-4 border-slate-900 flex items-center justify-center" onclick="handleInput('ArrowRight')">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+        </button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const highScoreElement = document.getElementById('highScore');
+        const overlay = document.getElementById('gameOverlay');
+        const overlayTitle = document.getElementById('overlayTitle');
+        const startBtn = document.getElementById('startBtn');
+
+        // Game Settings
+        const TILE_COUNT = 20;
+        const TILE_SIZE = canvas.width / TILE_COUNT;
+        const GAME_SPEED = 100;
+
+        // Game State
+        let score = 0;
+        let highScore = localStorage.getItem('snakeHighScore') || 0;
+        highScoreElement.innerText = highScore;
+        
+        let xVelocity = 0;
+        let yVelocity = 0;
+        
+        let headX = 10;
+        let headY = 10;
+        
+        let snakeParts = [];
+        let tailLength = 2;
+        
+        let appleX = 5;
+        let appleY = 5;
+        
+        let gameInterval;
+        let isGameRunning = false;
+
+        // Audio Context for simple beeps (created on user interaction)
+        let audioCtx;
+
+        function playSound(type) {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            if (type === 'eat') {
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'die') {
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.setValueAtTime(200, audioCtx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.3);
+                gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.3);
+            }
+        }
+
+        // Game Loop
+        function drawGame() {
+            changeSnakePosition();
+            
+            // Check Game Over conditions
+            let result = isGameOver();
+            if(result){
+                playSound('die');
+                return;
+            }
+
+            clearScreen();
+            checkAppleCollision();
+            drawApple();
+            drawSnake();
+        }
+
+        function isGameOver() {
+            let gameOver = false;
+
+            // Wall collision (Stop game)
+            // Alternative: Wrap around would be if(headX < 0) headX = TILE_COUNT -1;
+            if(xVelocity === 0 && yVelocity === 0) return false;
+
+            if(headX < 0 || headX === TILE_COUNT || headY < 0 || headY === TILE_COUNT){
+                gameOver = true;
+            }
+
+            // Self collision
+            for(let i=0; i < snakeParts.length; i++){
+                let part = snakeParts[i];
+                if(part.x === headX && part.y === headY){
+                    gameOver = true;
+                    break;
+                }
+            }
+
+            if (gameOver) {
+                stopGame();
+                overlayTitle.innerText = "GAME OVER";
+                overlayTitle.classList.add('text-red-500');
+                overlayTitle.classList.remove('text-cyan-400');
+                startBtn.innerText = "TRY AGAIN";
+                overlay.classList.remove('hidden');
+                
+                if(score > highScore) {
+                    highScore = score;
+                    localStorage.setItem('snakeHighScore', highScore);
+                    highScoreElement.innerText = highScore;
+                }
+            }
+
+            return gameOver;
+        }
+
+        function stopGame() {
+            clearInterval(gameInterval);
+            isGameRunning = false;
+        }
+
+        function clearScreen() {
+            ctx.fillStyle = '#020617'; // Match CSS background
+            ctx.fillRect(0,0,canvas.width, canvas.height);
+        }
+
+        function drawSnake() {
+            ctx.fillStyle = '#22d3ee'; // Cyan-400
+            
+            // Draw parts
+            for(let i = 0; i < snakeParts.length; i++){
+                let part = snakeParts[i];
+                
+                // Glow effect logic
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = "#22d3ee";
+                
+                ctx.fillRect(part.x * TILE_SIZE, part.y * TILE_SIZE, TILE_SIZE - 2, TILE_SIZE - 2);
+            }
+
+            // Push new head position
+            snakeParts.push(new SnakePart(headX, headY));
+            
+            // Remove tail
+            if(snakeParts.length > tailLength){
+                snakeParts.shift();
+            }
+
+            ctx.fillStyle = '#c084fc'; // Purple head
+            ctx.fillRect(headX * TILE_SIZE, headY * TILE_SIZE, TILE_SIZE -2, TILE_SIZE -2);
+            
+            // Reset shadow for performance
+            ctx.shadowBlur = 0;
+        }
+
+        function changeSnakePosition() {
+            headX = headX + xVelocity;
+            headY = headY + yVelocity;
+        }
+
+        function drawApple() {
+            ctx.fillStyle = "#f472b6"; // Pink-400
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "#f472b6";
+            ctx.fillRect(appleX * TILE_SIZE, appleY * TILE_SIZE, TILE_SIZE - 2, TILE_SIZE - 2);
+            ctx.shadowBlur = 0;
+        }
+
+        function checkAppleCollision() {
+            if(appleX === headX && appleY === headY){
+                playSound('eat');
+                appleX = Math.floor(Math.random() * TILE_COUNT);
+                appleY = Math.floor(Math.random() * TILE_COUNT);
+                tailLength++;
+                score++;
+                scoreElement.innerText = score;
+                
+                // Check if apple spawned on snake body
+                snakeParts.forEach(part => {
+                    if(part.x === appleX && part.y === appleY) {
+                        checkAppleCollision(); // Recursive retry
+                    }
+                });
+            }
+        }
+
+        class SnakePart{
+            constructor(x, y){
+                this.x = x;
+                this.y = y;
+            }
+        }
+
+        // Input Handling
+        document.body.addEventListener('keydown', keyDown);
+
+        function keyDown(event){
+            handleInput(event.code);
+        }
+
+        function handleInput(key) {
+            if (!isGameRunning) return;
+
+            // Prevent default scrolling for arrow keys
+            if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(key)) {
+                // event is not available here if called from button click, handle externally or ignore
+            }
+
+            // Up
+            if(key === 'ArrowUp' || key === 'KeyW'){
+                if(yVelocity === 1) return; // Prevent 180 degree turn
+                yVelocity = -1;
+                xVelocity = 0;
+            }
+            // Down
+            if(key === 'ArrowDown' || key === 'KeyS'){
+                if(yVelocity === -1) return;
+                yVelocity = 1;
+                xVelocity = 0;
+            }
+            // Left
+            if(key === 'ArrowLeft' || key === 'KeyA'){
+                if(xVelocity === 1) return;
+                yVelocity = 0;
+                xVelocity = -1;
+            }
+            // Right
+            if(key === 'ArrowRight' || key === 'KeyD'){
+                if(xVelocity === -1) return;
+                yVelocity = 0;
+                xVelocity = 1;
+            }
+        }
+
+        // Game Control
+        function resetGame() {
+            headX = 10;
+            headY = 10;
+            snakeParts = [];
+            tailLength = 2;
+            score = 0;
+            xVelocity = 0;
+            yVelocity = 0; // Start stationary
+            scoreElement.innerText = score;
+            
+            // Reset overlay style
+            overlayTitle.innerText = "READY?";
+            overlayTitle.classList.remove('text-red-500');
+            overlayTitle.classList.add('text-cyan-400');
+            
+            // Initial draw
+            clearScreen();
+            drawSnake(); 
+            drawApple();
+        }
+
+        startBtn.addEventListener('click', () => {
+            resetGame();
+            overlay.classList.add('hidden');
+            isGameRunning = true;
+            
+            // Start moving right immediately or wait for input? 
+            // Classic snake usually starts moving immediately or waits.
+            // Let's move right by default to avoid instant death if user does nothing
+            xVelocity = 1;
+            yVelocity = 0;
+
+            // Initialize Audio on first click
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            gameInterval = setInterval(drawGame, GAME_SPEED);
+        });
+
+        // Initial Setup
+        resetGame();
+
+    </script>
+</body>
+</html>
