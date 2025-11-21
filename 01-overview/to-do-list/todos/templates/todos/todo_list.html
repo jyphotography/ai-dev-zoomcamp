@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo List</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #5568d3;
+        }
+        .btn-success {
+            background: #48bb78;
+        }
+        .btn-success:hover {
+            background: #38a169;
+        }
+        .btn-danger {
+            background: #f56565;
+        }
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+        .btn-secondary {
+            background: #718096;
+        }
+        .btn-secondary:hover {
+            background: #4a5568;
+        }
+        .todo-item {
+            background: #f7fafc;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .todo-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .todo-item.completed {
+            opacity: 0.7;
+            border-left-color: #48bb78;
+        }
+        .todo-item.completed .todo-title {
+            text-decoration: line-through;
+            color: #718096;
+        }
+        .todo-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+        .todo-description {
+            color: #4a5568;
+            margin-bottom: 15px;
+        }
+        .todo-meta {
+            font-size: 0.9em;
+            color: #718096;
+            margin-bottom: 10px;
+        }
+        .todo-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #718096;
+        }
+        .empty-state h2 {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📝 My Todo List</h1>
+            <p>Stay organized and get things done!</p>
+        </div>
+        <div class="content">
+            <a href="{% url 'todo_create' %}" class="btn btn-success">+ Add New Todo</a>
+            
+            {% if todos %}
+                {% for todo in todos %}
+                <div class="todo-item {% if todo.completed %}completed{% endif %}">
+                    <div class="todo-title">{{ todo.title }}</div>
+                    {% if todo.description %}
+                    <div class="todo-description">{{ todo.description }}</div>
+                    {% endif %}
+                    <div class="todo-meta">
+                        Created: {{ todo.created_at|date:"M d, Y H:i" }}
+                        {% if todo.completed %}
+                        | ✅ Completed
+                        {% else %}
+                        | ⏳ Pending
+                        {% endif %}
+                    </div>
+                    <div class="todo-actions">
+                        <a href="{% url 'todo_toggle' todo.pk %}" class="btn btn-secondary">
+                            {% if todo.completed %}Mark Incomplete{% else %}Mark Complete{% endif %}
+                        </a>
+                        <a href="{% url 'todo_update' todo.pk %}" class="btn">Edit</a>
+                        <a href="{% url 'todo_delete' todo.pk %}" class="btn btn-danger">Delete</a>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <h2>No todos yet!</h2>
+                    <p>Create your first todo to get started.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
+

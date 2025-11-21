@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete Todo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2em;
+        }
+        .content {
+            padding: 30px;
+        }
+        .warning {
+            background: #fed7d7;
+            border-left: 4px solid #f56565;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .warning h2 {
+            color: #c53030;
+            margin-bottom: 10px;
+        }
+        .todo-preview {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .todo-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+        .todo-description {
+            color: #4a5568;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #f56565;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+            margin-right: 10px;
+        }
+        .btn:hover {
+            background: #e53e3e;
+        }
+        .btn-secondary {
+            background: #718096;
+        }
+        .btn-secondary:hover {
+            background: #4a5568;
+        }
+        .form-actions {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚠️ Delete Todo</h1>
+        </div>
+        <div class="content">
+            <div class="warning">
+                <h2>Are you sure?</h2>
+                <p>This action cannot be undone. The todo will be permanently deleted.</p>
+            </div>
+            <div class="todo-preview">
+                <div class="todo-title">{{ todo.title }}</div>
+                {% if todo.description %}
+                <div class="todo-description">{{ todo.description }}</div>
+                {% endif %}
+            </div>
+            <form method="post" class="form-actions">
+                {% csrf_token %}
+                <button type="submit" class="btn">Yes, Delete</button>
+                <a href="{% url 'todo_list' %}" class="btn btn-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
+
