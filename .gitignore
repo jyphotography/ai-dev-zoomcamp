@@ -231,3 +231,4 @@ translations/
 *.backup
 *.tmp
 
+node_modules/
