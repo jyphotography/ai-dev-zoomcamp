@@ -45,6 +45,27 @@ Notes and tips
 - Pyodide loads from CDN (https://cdn.jsdelivr.net). Static hosting must allow outbound network access (Render does).
 - If you prefer a single service using Docker, see the `Dockerfile` in the repo (Option A). For separate services, Option B (Static + Web) is more cost-effective.
 
+Server `postinstall` (auto client build)
+
+This repository includes a `postinstall` script in `02-end-to-end/server/package.json` that will automatically build the client and copy the `dist` into the server directory during `npm install` on the server. Concretely the script runs:
+
+```bash
+npm --prefix ../client install
+npm --prefix ../client run build
+cp -r ../client/dist ./dist || true
+```
+
+What this means:
+- If you deploy the **server** as a single Web Service (Option A) or with the server Root Directory set to `02-end-to-end/server`, the server will build the client at deploy time and then serve the built static files at `/` automatically (no separate Static Site required).
+- Building the client during server deploy increases build time and may require more build resources; if your host has strict build time limits you may prefer to build the client separately (Option B).
+
+How to opt-out
+- If you prefer to keep the client and server separate (Option B), you can remove or disable the `postinstall` script from `02-end-to-end/server/package.json` before deploying the server. Alternatively, leave it present but still deploy the client as a Static Site — the postinstall will run but is harmless.
+
+When to use which
+- Use the server `postinstall` when you want a single URL (server serves the app) and prefer a single deploy step.
+- Use the Static Site + Web Service approach when you want a separate CDN-backed static host for the client and a dedicated server for sockets/APIs.
+
 Example `render.yaml`
 
 You can add a `render.yaml` to the repo to declare both services. Edit the placeholders before applying.
