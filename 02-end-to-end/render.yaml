@@ -1,0 +1,23 @@
+# Example Render manifest for Option B (server web service + client static site)
+# Edit the placeholder values before using.
+services:
+  - type: web
+    name: e2e-server
+    env: node
+    root: 02-end-to-end/server
+    buildCommand: npm install
+    startCommand: node src/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_ORIGIN
+        value: https://your-client.onrender.com
+
+  - type: static
+    name: e2e-client
+    root: 02-end-to-end/client
+    buildCommand: npm install && npm run build
+    publishPath: dist
+    envVars:
+      - key: VITE_SERVER
+        value: https://your-server.onrender.com

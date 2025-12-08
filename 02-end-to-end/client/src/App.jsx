@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import { io } from 'socket.io-client'
 import { runJavaScript } from './utils'
 
-const SERVER = import.meta.env.VITE_SERVER || 'http://localhost:4000'
+const SERVER = import.meta.env.VITE_SERVER || window.location.origin
 
 export default function App() {
   const [sessionId, setSessionId] = useState('')
