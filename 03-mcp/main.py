@@ -1,5 +1,9 @@
 from fastmcp import FastMCP
 import requests
+import urllib3
+
+# Disable SSL warnings for testing
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 mcp = FastMCP("Demo 🚀")
 
@@ -45,6 +49,23 @@ def scrape_web(url: str) -> str:
         The markdown content of the web page
     """
     return scrape_web_impl(url)
+
+@mcp.tool
+def count_word_in_text(text: str, word: str) -> int:
+    """Count how many times a word appears in a text (case-insensitive).
+    
+    Useful for counting word occurrences in scraped web content.
+    
+    Args:
+        text: The text to search in
+        word: The word to count
+    
+    Returns:
+        The number of times the word appears in the text
+    """
+    text_lower = text.lower()
+    word_lower = word.lower()
+    return text_lower.count(word_lower)
 
 if __name__ == "__main__":
     mcp.run()
