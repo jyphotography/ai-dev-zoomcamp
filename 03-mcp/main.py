@@ -68,4 +68,5 @@ def count_word_in_text(text: str, word: str) -> int:
     return text_lower.count(word_lower)
 
 if __name__ == "__main__":
-    mcp.run()
+    mcp.run()Count how many times the word "data" appears on https://datatalks.club/
+Use available MCP tools for that

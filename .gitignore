@@ -232,3 +232,6 @@ translations/
 *.tmp
 
 node_modules/
+# Downloaded files and extracted directories (Question 5)
+fastmcp-main/
+fastmcp-main.zip
